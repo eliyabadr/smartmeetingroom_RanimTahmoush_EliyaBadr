@@ -1,0 +1,599 @@
+{
+  "info": {
+    "_postman_id": "c3d2c2c8-0000-4000-8000-000000000435",
+    "name": "Smart Meeting Room - Ranim Tahmoush",
+    "description": "Postman collection for the Smart Meeting Room microservices (Users, Rooms, Bookings, Reviews).\n\nNotes:\n- First, use Users Service → Register (optional) then Login to get a JWT token.\n- Copy the `access_token` value from /login response and paste it into the `{{jwt_token}}` collection variable.\n- All protected endpoints already use `Authorization: Bearer {{jwt_token}}` header.\n- Base URLs:\n  - Users: {{base_users}} (http://localhost:8001)\n  - Rooms: {{base_rooms}} (http://localhost:8002)\n  - Bookings: {{base_bookings}} (http://localhost:8003)\n  - Reviews: {{base_reviews}} (http://localhost:8004)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_users",
+      "value": "http://localhost:8001"
+    },
+    {
+      "key": "base_rooms",
+      "value": "http://localhost:8002"
+    },
+    {
+      "key": "base_bookings",
+      "value": "http://localhost:8003"
+    },
+    {
+      "key": "base_reviews",
+      "value": "http://localhost:8004"
+    },
+    {
+      "key": "jwt_token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Users Service (8001)",
+      "description": "User management and authentication service.\nIncludes: registration, login, profile, admin operations.",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123\",\n  \"role\": \"admin\"\n}"
+            },
+            "url": "{{base_users}}/register",
+            "description": "Create a new user.\n\nUse this to create at least one `admin` user and one normal `user` for testing.\n\nFields:\n- username: unique username\n- email: unique email\n- password: plain text password (will be hashed in DB)\n- role: \"admin\" or \"user\" (or \"moderator\" if you use it in Reviews)"
+          },
+          "response": []
+        },
+        {
+          "name": "Register Normal User (example)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"ranim\",\n  \"email\": \"ranim@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"user\"\n}"
+            },
+            "url": "{{base_users}}/register",
+            "description": "Example request to register a normal user.\nUse different username/email to avoid 400 'already exists' error."
+          },
+          "response": []
+        },
+        {
+          "name": "Register - Duplicate Username (error case)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"email\": \"another@example.com\",\n  \"password\": \"x\",\n  \"role\": \"user\"\n}"
+            },
+            "url": "{{base_users}}/register",
+            "description": "Error case example.\nExpected: 400 Bad Request with message 'Username already exists'.\nUse this in the report as evidence of validation."
+          },
+          "response": []
+        },
+        {
+          "name": "Login (get JWT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "admin",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "admin123",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{base_users}}/login",
+            "description": "Obtain a JWT access token using OAuth2 Password flow.\n\nSteps:\n1. Send username/password.\n2. Copy `access_token` from the JSON response.\n3. Paste the value into the collection variable {{jwt_token}}.\n4. All other protected requests will automatically send `Authorization: Bearer {{jwt_token}}`."
+          },
+          "response": []
+        },
+        {
+          "name": "Login - Wrong Password (error case)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "admin",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "wrongpassword",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{base_users}}/login",
+            "description": "Negative test: invalid credentials.\nExpected: 401 Unauthorized with message 'Invalid username or password'."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Profile (/me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_users}}/me",
+            "description": "Get currently authenticated user profile based on JWT.\nRequires a valid {{jwt_token}}.\nUse this to prove authentication works."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin - List All Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_users}}/admin/users",
+            "description": "List all registered users.\nRequires role = 'admin'.\nIf you call it with a normal user token, you should get 403 'Admins only'."
+          },
+          "response": []
+        },
+        {
+          "name": "Get User by Username",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_users}}/users/admin",
+            "description": "Get a specific user's details by username.\nSecurity: any authenticated user can call this (your implementation may enforce extra rules)."
+          },
+          "response": []
+        },
+        {
+          "name": "Update User (self or admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newmail@example.com\",\n  \"password\": \"newpassword123\"\n}"
+            },
+            "url": "{{base_users}}/users/admin",
+            "description": "Update user data.\nRules:\n- User can update their own account.\n- Admin can update anyone.\nPassword will be re-hashed before saving."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin - Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_users}}/users/username_to_delete",
+            "description": "Delete a user by username.\nRequires admin role.\nExpected: 200 OK with message 'User ... deleted'."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Rooms Service (8002)",
+      "description": "Manage meeting rooms.\nOnly admins can create/update/delete rooms. Listing and viewing rooms is public (depending on your implementation).",
+      "item": [
+        {
+          "name": "Home",
+          "request": {
+            "method": "GET",
+            "url": "{{base_rooms}}/",
+            "description": "Health check endpoint for Rooms Service.\nReturns simple JSON indicating status = running."
+          },
+          "response": []
+        },
+        {
+          "name": "List Rooms",
+          "request": {
+            "method": "GET",
+            "url": "{{base_rooms}}/rooms",
+            "description": "Get all rooms.\nThis is used by the UI and also indirectly by bookings to show options."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Room (admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Conference Room A\",\n  \"capacity\": 10,\n  \"location\": \"Building 1, Floor 2\"\n}"
+            },
+            "url": "{{base_rooms}}/rooms",
+            "description": "Create a new meeting room.\nRequires admin token (Rooms Service checks role from JWT)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Room by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_rooms}}/rooms/1",
+            "description": "Get details for room with id=1.\nUsed by Bookings service to validate room existence."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Room (admin only)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Conference Room A - Updated\",\n  \"capacity\": 12,\n  \"location\": \"Building 1, Floor 2\"\n}"
+            },
+            "url": "{{base_rooms}}/rooms/1",
+            "description": "Update an existing room.\nRequires admin role.\nIf the room does not exist → 404."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Room (admin only)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": "{{base_rooms}}/rooms/1",
+            "description": "Delete room with id=1.\nRequires admin role.\nUsed as admin maintenance example."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Bookings Service (8003)",
+      "description": "Manage room bookings.\nIncludes availability checks and conflict prevention.",
+      "item": [
+        {
+          "name": "Home",
+          "request": {
+            "method": "GET",
+            "url": "{{base_bookings}}/",
+            "description": "Health check endpoint for Bookings Service."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"room_id\": 1,\n  \"start_time\": \"2025-11-20T10:00:00\",\n  \"end_time\": \"2025-11-20T11:00:00\"\n}"
+            },
+            "url": "{{base_bookings}}/bookings",
+            "description": "Create a booking for a specific room and time interval.\nBusiness rules:\n- Requires valid JWT.\n- Booking user is taken from token (user_username).\n- Service checks:\n  - Room exists via Rooms Service /rooms/{id}.\n  - Time range does not conflict with existing booking (overlap check)."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Booking - Conflict (error case)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"room_id\": 1,\n  \"start_time\": \"2025-11-20T10:30:00\",\n  \"end_time\": \"2025-11-20T10:45:00\"\n}"
+            },
+            "url": "{{base_bookings}}/bookings",
+            "description": "Error case: booking conflicts with an existing reservation.\nExpected: 400 with message 'Room already booked during this time'.\nUse this screenshot in report for conflict validation."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Booking by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": "{{base_bookings}}/bookings/1",
+            "description": "Get booking details by ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Bookings",
+          "request": {
+            "method": "GET",
+            "url": "{{base_bookings}}/users/admin/bookings",
+            "description": "List bookings for a specific username.\nThis endpoint can be used without auth in your implementation, but usually should require auth (your choice for the report)."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Booking (owner or admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"start_time\": \"2025-11-20T11:00:00\",\n  \"end_time\": \"2025-11-20T12:00:00\"\n}"
+            },
+            "url": "{{base_bookings}}/bookings/1",
+            "description": "Update booking time.\nOnly the owner (based on JWT username) or an admin can update.\nAvailability is checked again for new time."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Booking (owner or admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": "{{base_bookings}}/bookings/1",
+            "description": "Cancel a booking.\nOnly the owner or admin can delete.\nUse this along with create/update for full flow in report."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Reviews Service (8004)",
+      "description": "Manage user reviews for rooms (rating + comments + moderation).",
+      "item": [
+        {
+          "name": "Home",
+          "request": {
+            "method": "GET",
+            "url": "{{base_reviews}}/",
+            "description": "Health check for Reviews Service."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"room_id\": 1,\n  \"rating\": 5,\n  \"comment\": \"Very nice room, good lighting and quiet.\"\n}"
+            },
+            "url": "{{base_reviews}}/reviews",
+            "description": "Submit a new review for a room.\n- User identity is taken from JWT (user_username).\n- rating: integer 1–5.\n- comment: text, trimmed and length-limited by Pydantic."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Review by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_reviews}}/reviews/1",
+            "description": "Get a single review by its ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Reviews for Room",
+          "request": {
+            "method": "GET",
+            "url": "{{base_reviews}}/rooms/1/reviews",
+            "description": "List all reviews for room_id=1.\nUse this for the UI and for report screenshots."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Review (owner or moderator/admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 4,\n  \"comment\": \"Updated: Good room but projector was slow.\"\n}"
+            },
+            "url": "{{base_reviews}}/reviews/1",
+            "description": "Edit an existing review.\nSecurity: only the user who created the review OR roles admin/moderator may update it."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Review (owner or moderator/admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": "{{base_reviews}}/reviews/1",
+            "description": "Delete a review.\nSecurity: only the review owner or moderator/admin may delete."
+          },
+          "response": []
+        },
+        {
+          "name": "Flag Review (any authenticated user)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": "{{base_reviews}}/reviews/1/flag",
+            "description": "Mark a review as flagged (potentially inappropriate).\nAny authenticated user can flag.\nFlagged reviews can be reviewed by moderators/admins."
+          },
+          "response": []
+        },
+        {
+          "name": "Unflag Review (moderator/admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": "{{base_reviews}}/reviews/1/unflag",
+            "description": "Remove the flagged status from a review.\nRequires role 'admin' or 'moderator' in JWT."
+          },
+          "response": []
+        },
+        {
+          "name": "List Flagged Reviews (moderation)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": "{{base_reviews}}/admin/reviews/flagged",
+            "description": "List all reviews where flagged = true.\nUse this to demonstrate moderation dashboard in report."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

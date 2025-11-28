@@ -1,0 +1,133 @@
+version: "3.9"
+
+services:
+  # ============================
+  # HAProxy (Load Balancer)
+  # ============================
+  haproxy:
+    image: haproxy:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
+    depends_on:
+      - users_service
+      - rooms_service
+      - bookings_service
+      - reviews_service
+
+  # ============================
+  # RabbitMQ (Async Messaging)
+  # ============================
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"     # AMQP
+      - "15672:15672"   # Web UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================
+  # POSTGRES DATABASE
+  # ============================
+  postgres:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: ranim
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: smartmeeting
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ranim -d smartmeeting"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  # ============================
+  # USERS SERVICE
+  # ============================
+  users_service:
+    build: ./users_service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://ranim:password123@postgres:5432/smartmeeting
+    ports:
+      - "8001:8001"
+
+  # ============================
+  # ROOMS SERVICE
+  # ============================
+  rooms_service:
+    build: ./rooms_service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://ranim:password123@postgres:5432/smartmeeting
+    ports:
+      - "8002:8002"
+
+  # ============================
+  # BOOKINGS SERVICE
+  # ============================
+  bookings_service:
+    build: ./bookings_service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rooms_service:
+        condition: service_started
+      users_service:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://ranim:password123@postgres:5432/smartmeeting
+      RABBITMQ_HOST: rabbitmq
+    ports:
+      - "8003:8003"
+
+  # ============================
+  # REVIEWS SERVICE
+  # ============================
+  reviews_service:
+    build: ./reviews_service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      users_service:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql+psycopg2://ranim:password123@postgres:5432/smartmeeting
+    ports:
+      - "8004:8004"
+
+  # ============================
+  # NOTIFICATION SERVICE
+  # ============================
+  notification_service:
+    build: ./notification_service
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://ranim:password123@postgres:5432/smartmeeting
+      RABBITMQ_HOST: rabbitmq
+
+# ============================
+# VOLUMES
+# ============================
+volumes:
+  postgres_data:
