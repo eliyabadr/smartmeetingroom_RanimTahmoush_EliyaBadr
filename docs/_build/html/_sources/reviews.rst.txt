@@ -1,0 +1,7 @@
+Reviews Service Documentation
+=============================
+
+.. automodule:: reviews_service.app.main
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,37 @@
+Smart Meeting Room – Ranim Tahmoush
+====================================
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   users
+   rooms
+   bookings
+   reviews
+
+API Documentation
+-----------------
+
+Below is the automatically generated documentation for each microservice.
+
+.. automodule:: users_service.app.main
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: rooms_service.app.main
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: bookings_service.app.main
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: reviews_service.app.main
+   :members:
+   :undoc-members:
+   :show-inheritance:
+

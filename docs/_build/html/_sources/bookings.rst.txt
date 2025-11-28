@@ -1,0 +1,7 @@
+Bookings Service Documentation
+==============================
+
+.. automodule:: bookings_service.app.main
+   :members:
+   :undoc-members:
+   :show-inheritance:
